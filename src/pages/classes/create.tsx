@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { useBack } from "@refinedev/core";
-import { useForm } from "react-hook-form";
+import { useForm } from "@refinedev/react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { classSchema } from "@/lib/schema";
@@ -16,7 +16,6 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -29,7 +28,7 @@ import { subjects, teachers } from "@/constants";
 import { Textarea } from "@/components/ui/textarea";
 import { Loader2 } from "lucide-react";
 import UploadWidget from "@/components/upload-widget";
-import { p } from "node_modules/react-router/dist/development/index-react-server-client-MKTlCGL3.d.mts";
+
 
 const ClassesCreate = () => {
   const back = useBack();
@@ -57,7 +56,7 @@ const ClassesCreate = () => {
   };
 
   const bannerPublicId = form.watch("bannerCldPubId");
-  const setBannerImage = (field, file) => {
+  const setBannerImage = (field:any, file: any) => {
    if(file){
       field.onChange(file.url)
       form.setValue('bannerCldPubId', file.publicId, {
@@ -111,7 +110,7 @@ const ClassesCreate = () => {
                                 }
                               : null
                           }
-                          onChange={(field: any, file: any) => setBannerImage(field, file)}
+                          onChange={(file: any) => setBannerImage(field, file)}
                         />
                       </FormControl>
                       <FormMessage />
