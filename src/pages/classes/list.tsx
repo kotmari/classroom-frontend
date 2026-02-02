@@ -1,9 +1,192 @@
-
+import { CreateButton } from "@/components/refine-ui/buttons/create";
+import { DataTable } from "@/components/refine-ui/data-table/data-table";
+import { ListView } from "@/components/refine-ui/views/list-view";
+import { Badge } from "@/components/ui/badge";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ClassDetails, Subject, User } from "@/types";
+import { useList} from "@refinedev/core";
+import { useTable } from "@refinedev/react-table";
+import { ColumnDef } from "@tanstack/react-table";
+import { Search } from "lucide-react";
+import { useMemo, useState } from "react";
 
 const ClassesList = () => {
-  return (
-    <div>list</div>
-  )
-}
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedTeacher, setSelectedTeacher] = useState("all");
+  const [selectedSubject, setSelectedSubject] = useState("all");
 
-export default ClassesList
+  const {query: subjectsQuery} = useList<Subject>({
+    resource: "subjects",
+    pagination: {pageSize: 100}
+  })
+  const {query: teachersQuery} = useList<User>({
+    resource: "users",
+    filters: [{field: 'role', operator: 'eq', value: 'teacher'}],
+    pagination: {pageSize: 100}
+  })
+
+  const subjects = subjectsQuery?.data?.data || []
+  const teachers = teachersQuery?.data?.data || []
+
+  const subjectFilters = selectedSubject === 'all' ? [] :
+   [{ field: "subject", operator: "contains" as const, value: selectedSubject }]
+   
+  const teacherFilters = selectedTeacher === "all" ? [] : [{ field: "teacher", operator: "contains" as const, value: selectedTeacher }]
+
+  const searchFilters = searchQuery
+    ? [{ field: "name", operator: "contains" as const, value: searchQuery }]
+    : [];
+
+  const classColumns = useMemo<ColumnDef<ClassDetails>[]>(() => [
+      {
+        id: 'bannerUrl',
+        accessorKey: "bannerUrl",
+        size: 80,
+        header: () => <p className="column-title ml-2">Banner</p>,
+        cell: ({getValue}) => (
+          <div className="flex items-center justify-center ml-2">
+            <img src={getValue<string>() || ""} alt="Class Banner" className="w-10 h-10 object-cover" />
+          </div>
+        )
+      },
+        {
+          id: "name",
+          accessorKey: "name",
+          size: 200,
+          header: () => <p className="column-title">Class Name</p>,
+          cell: ({ getValue }) => (
+            <span className="text-foreground">{getValue<string>()}</span>
+          ),
+          filterFn: "includesString",
+        },
+        {
+          id: "status",
+          accessorKey: "status",
+          size: 150,
+          header: () => <p className="column-title">Status</p>,
+          cell: ({ getValue }) => {
+            const status = getValue<string>()
+            return(
+              <Badge variant={status === 'active' ? "default" : "secondary"}>
+                {status.charAt(0).toUpperCase() + status.slice(1)}
+              </Badge>
+            )
+          }
+        },
+        {
+          id: "subject",
+          accessorKey: "subject.name",
+          size: 150,
+          header: () => <p className="column-title">Subject</p>,
+          cell: ({ getValue }) => (
+            <span className="text-foreground">
+              {getValue<string>()}
+            </span>
+          ),
+        },
+        {
+          id: "teacher",
+          accessorKey: "teacher.name",
+          size: 150,
+          header: () => <p className="column-title">Teacher</p>,
+          cell: ({ getValue }) => (
+            <span className="text-foreground">
+              {getValue<string>()}
+            </span>
+          ),
+        },
+        {
+          id: "capacity",
+          accessorKey: "capacity",
+          size: 100,
+          header: () => <p className="column-title">Capacity</p>,
+          cell: ({ getValue }) => (
+            <span className="text-foreground">
+              {getValue<string>()}
+            </span>
+          ),
+        },
+      ],
+      [],
+    )
+
+    const classTable = useTable<ClassDetails>({
+      columns: classColumns,
+      refineCoreProps: {
+        resource: 'classes',
+        pagination: { pageSize: 10, mode: 'server'},
+        filters: {
+          permanent: [...searchFilters, ...subjectFilters, ...teacherFilters]
+        },
+        sorters: {
+          initial: [
+            {field: 'id', order: 'desc'}
+          ]
+        }
+      }
+    })
+
+
+
+  return (
+    <ListView>
+      <Breadcrumb />
+      <h1 className="page-title">Classes</h1>
+      <div className="intro-row">
+        <p>Manage your classes, subjects and teachers.</p>
+        <div className="actions-row">
+          <div className="search-field">
+            <Search className="search-icon" />
+            <Input
+              type="text"
+              placeholder="Search by name..."
+              className="pl-10 w-full"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+          <div className="flex flex-wrap gap-2 w-full sm:w-auto">
+            <Select
+              value={selectedSubject}
+              onValueChange={setSelectedSubject}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Filter by subject" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Subject</SelectItem>
+                {subjects.map((subject) => (
+                  <SelectItem key={subject.id} value={subject.name}>
+                    {subject.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select
+              value={selectedTeacher}
+              onValueChange={setSelectedTeacher}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Filter by teacher" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Teacher</SelectItem>
+                {teachers.map((teacher) => (
+                  <SelectItem key={teacher.id} value={teacher.name}>
+                    {teacher.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+            <CreateButton />
+        </div>
+      </div>
+      <DataTable table={classTable} />
+    </ListView>
+  );
+};
+
+export default ClassesList;
